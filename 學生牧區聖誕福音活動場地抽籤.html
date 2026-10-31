@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生牧區聖誕福音活動場地抽籤</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        xmas: {
+                            red: '#D42426',
+                            redDark: '#991B1E',
+                            green: '#165B33',
+                            greenDark: '#114B29',
+                            gold: '#F8B229',
+                            goldLight: '#FDE68A',
+                            snow: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN for celebration effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* Snowfall animation effect */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            z-index: 9999;
+            color: #FFF;
+            user-select: none;
+            pointer-events: none;
+            animation-name: snowflakes-fall, snowflakes-shake;
+            animation-duration: 10s, 3s;
+            animation-timing-function: linear, ease-in-out;
+            animation-iteration-count: infinite, infinite;
+            animation-play-state: running, running;
+        }
+        @keyframes snowflakes-fall {
+            0% { top: -10% }
+            100% { top: 100% }
+        }
+        @keyframes snowflakes-shake {
+            0%, 100% { transform: translateX(0px) }
+            50% { transform: translateX(80px) }
+        }
+        /* Slot rolling effect */
+        @keyframes slotPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .slot-rolling {
+            animation: slotPulse 0.15s infinite ease-in-out;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #165B33; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-xmas-red selection:text-white relative pb-20 md:pb-8 overflow-x-hidden">
+
+    <!-- Snow Animation Elements -->
+    <div class="snowflake" style="left: 10%; animation-delay: 0s, 0s;">❄</div>
+    <div class="snowflake" style="left: 25%; animation-delay: 2s, 1s;">❅</div>
+    <div class="snowflake" style="left: 40%; animation-delay: 4s, 2s;">❄</div>
+    <div class="snowflake" style="left: 60%; animation-delay: 1s, 1s;">❆</div>
+    <div class="snowflake" style="left: 75%; animation-delay: 5s, 3s;">❄</div>
+    <div class="snowflake" style="left: 90%; animation-delay: 3s, 2s;">❅</div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-xmas-green/40 shadow-lg">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-xmas-red to-xmas-gold flex items-center justify-center text-white shadow-md shadow-xmas-red/30">
+                    <i class="fa-solid fa-gift text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-black bg-gradient-to-r from-xmas-gold via-amber-200 to-red-400 bg-clip-text text-transparent">
+                        學生牧區聖誕福音活動
+                    </h1>
+                    <p class="text-[10px] text-emerald-400 font-semibold tracking-wider">場地抽籤系統🎄</p>
+                </div>
+            </div>
+
+            <button id="openSyncModalBtn" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs bg-xmas-green/30 hover:bg-xmas-green/50 text-emerald-300 border border-xmas-green/50 rounded-xl transition">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>同步與備份</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        <!-- Navigation Tabs -->
+        <div class="flex bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-inner max-w-md mx-auto">
+            <button id="tabDrawNav" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 bg-gradient-to-r from-xmas-red to-red-700 text-white shadow-md">
+                <i class="fa-solid fa-dice text-xmas-gold"></i>
+                <span>時段與抽籤</span>
+            </button>
+            <button id="tabSummaryNav" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>總表登記紀錄</span>
+            </button>
+        </div>
+
+        <!-- ================= TAB 1: DRAW STEPS ================= -->
+        <div id="drawSection" class="space-y-6">
+
+            <!-- Step Progress Indicator -->
+            <div class="grid grid-cols-3 gap-2 max-w-lg mx-auto text-center text-xs">
+                <div id="step1Indicator" class="p-2 rounded-xl bg-xmas-red/20 border border-xmas-red text-xmas-gold font-bold flex items-center justify-center space-x-1">
+                    <span>1. 選擇小組</span>
+                </div>
+                <div id="step2Indicator" class="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-medium flex items-center justify-center space-x-1">
+                    <span>2. 選擇時間</span>
+                </div>
+                <div id="step3Indicator" class="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-medium flex items-center justify-center space-x-1">
+                    <span>3. 選擇場地</span>
+                </div>
+            </div>
+
+            <!-- STEP 1: SELECT GROUP -->
+            <div id="step1Card" class="bg-slate-900/80 backdrop-blur-lg p-6 rounded-3xl border border-slate-800 shadow-xl space-y-5">
+                <div class="text-center space-y-1">
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-xmas-green/30 text-emerald-300 font-semibold border border-xmas-green/50">Step 1 / 3</span>
+                    <h2 class="text-xl font-extrabold text-white">請選擇你的小組</h2>
+                    <p class="text-xs text-slate-400">登錄登記活動場地的小組成員身份</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto pt-2">
+                    <button type="button" onclick="selectGroup('崴丞小組')" class="groupBtn group p-5 bg-slate-800/80 hover:bg-xmas-green/30 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl text-center space-y-2 transition transform active:scale-95 flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-700 group-hover:bg-emerald-600 text-emerald-400 group-hover:text-white flex items-center justify-center text-xl transition">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <span class="font-bold text-base group-hover:text-emerald-300">崴丞小組</span>
+                    </button>
+
+                    <button type="button" onclick="selectGroup('子恩小組')" class="groupBtn group p-5 bg-slate-800/80 hover:bg-xmas-green/30 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl text-center space-y-2 transition transform active:scale-95 flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-700 group-hover:bg-emerald-600 text-emerald-400 group-hover:text-white flex items-center justify-center text-xl transition">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <span class="font-bold text-base group-hover:text-emerald-300">子恩小組</span>
+                    </button>
+
+                    <button type="button" onclick="selectGroup('厚翎小組')" class="groupBtn group p-5 bg-slate-800/80 hover:bg-xmas-green/30 border-2 border-slate-700 hover:border-emerald-500 rounded-2xl text-center space-y-2 transition transform active:scale-95 flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-700 group-hover:bg-emerald-600 text-emerald-400 group-hover:text-white flex items-center justify-center text-xl transition">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <span class="font-bold text-base group-hover:text-emerald-300">厚翎小組</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: SELECT TIME SLOT -->
+            <div id="step2Card" class="bg-slate-900/80 backdrop-blur-lg p-6 rounded-3xl border border-slate-800 shadow-xl space-y-5 hidden">
+                <div class="text-center space-y-1">
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-xmas-green/30 text-emerald-300 font-semibold border border-xmas-green/50">Step 2 / 3</span>
+                    <h2 class="text-xl font-extrabold text-white">請選擇登記時間時段</h2>
+                    <p class="text-xs text-slate-400">目前選擇小組：<span id="selectedGroupDisplay" class="text-xmas-gold font-bold">--</span></p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto pt-2">
+                    <button type="button" onclick="selectTimeSlot('12/1')" class="timeBtn p-4 bg-slate-800/80 hover:bg-xmas-red/30 border-2 border-slate-700 hover:border-xmas-red rounded-2xl text-left flex items-center justify-between transition transform active:scale-95">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-lg text-white">12/1</div>
+                            <div class="text-xs text-slate-400">主日聖誕福音週</div>
+                        </div>
+                        <i class="fa-solid fa-calendar-day text-xmas-gold text-xl"></i>
+                    </button>
+
+                    <button type="button" onclick="selectTimeSlot('12/8（兒童聖誕）')" class="timeBtn p-4 bg-slate-800/80 hover:bg-xmas-red/30 border-2 border-slate-700 hover:border-xmas-red rounded-2xl text-left flex items-center justify-between transition transform active:scale-95">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-lg text-white">12/8</div>
+                            <div class="text-xs text-emerald-400 font-medium">兒童聖誕福音場</div>
+                        </div>
+                        <i class="fa-solid fa-child-reaching text-xmas-gold text-xl"></i>
+                    </button>
+
+                    <button type="button" onclick="selectTimeSlot('12/5（新莊兒童聖誕）')" class="timeBtn p-4 bg-slate-800/80 hover:bg-xmas-red/30 border-2 border-slate-700 hover:border-xmas-red rounded-2xl text-left flex items-center justify-between transition transform active:scale-95">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-lg text-white">12/5</div>
+                            <div class="text-xs text-amber-400 font-medium">新莊兒童聖誕專場</div>
+                        </div>
+                        <i class="fa-solid fa-star text-xmas-gold text-xl"></i>
+                    </button>
+
+                    <button type="button" onclick="selectTimeSlot('12/12')" class="timeBtn p-4 bg-slate-800/80 hover:bg-xmas-red/30 border-2 border-slate-700 hover:border-xmas-red rounded-2xl text-left flex items-center justify-between transition transform active:scale-95">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-lg text-white">12/12</div>
+                            <div class="text-xs text-slate-400">聖誕特別慶典週</div>
+                        </div>
+                        <i class="fa-solid fa-holly-berry text-xmas-gold text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-center pt-2">
+                    <button type="button" onclick="goToStep(1)" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>重新選擇小組</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: DRAW LOTTERY FOR VENUE -->
+            <div id="step3Card" class="bg-slate-900/80 backdrop-blur-lg p-6 rounded-3xl border border-slate-800 shadow-xl space-y-6 hidden">
+                <div class="text-center space-y-1">
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-xmas-gold/20 text-xmas-gold font-semibold border border-xmas-gold/40">Step 3 / 3</span>
+                    <h2 class="text-xl font-extrabold text-white">請選擇要登記的場地</h2>
+                    <p class="text-xs text-slate-400">
+                        小組：<span id="summaryGroup" class="text-emerald-400 font-bold">--</span> | 
+                        時段：<span id="summaryTime" class="text-xmas-gold font-bold">--</span>
+                    </p>
+                </div>
+
+                <!-- Available Venues Selection Grid -->
+                <div class="space-y-3">
+                    <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                        <span><i class="fa-solid fa-building text-emerald-400 mr-1.5"></i>點選下方場地進行登記：</span>
+                    </div>
+
+                    <div id="venueSelectionGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Venue selection cards rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Actions / Return Home -->
+                <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <button type="button" onclick="goToStep(2)" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>修改時間時段</span>
+                    </button>
+                    <button type="button" onclick="resetFlow()" class="px-4 py-2 bg-xmas-green hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-1.5 active:scale-95">
+                        <i class="fa-solid fa-house"></i>
+                        <span>返回首頁（換小組登記）</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= TAB 2: SUMMARY TABLE ================= -->
+        <div id="summarySection" class="space-y-6 hidden">
+            <div class="bg-slate-900/80 backdrop-blur-lg p-6 rounded-3xl border border-slate-800 shadow-xl space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-xmas-gold"></i>
+                            <span>聖誕福音活動場地登記總表</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">隨時查看各小組在四大時段的場地抽籤結果</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="copyLineSummary()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-md flex items-center space-x-1.5 active:scale-95">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span>複製 LINE 通告文字</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Registration Cards / Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">登記時間</th>
+                                <th class="p-3">場地名稱</th>
+                                <th class="p-3">中籤小組</th>
+                                <th class="p-3">狀態</th>
+                                <th class="p-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody" class="divide-y divide-slate-800">
+                            <!-- Dynamically generated rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pt-2 text-right">
+                    <button type="button" onclick="clearAllData()" class="text-xs text-red-400 hover:text-red-300">
+                        <i class="fa-solid fa-trash-can mr-1"></i>清空所有登記紀錄
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: Data Backup & Restore -->
+    <div id="syncModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud text-xmas-gold"></i>
+                    <span>跨裝置資料同步備份</span>
+                </h3>
+                <button type="button" onclick="closeSyncModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                可將此手機／電腦上完成的抽籤登記匯出成 JSON 檔案，發送到其他手機進行「匯入」，即可跨裝置共享最新結果！
+            </p>
+            <div class="space-y-3 pt-2">
+                <button type="button" onclick="exportDataJSON()" class="w-full py-3 bg-xmas-green hover:bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-md transition">
+                    <i class="fa-solid fa-download"></i>
+                    <span>匯出 JSON 備份檔</span>
+                </button>
+                <label class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 cursor-pointer border border-slate-700 transition">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>匯入 JSON 備份檔</span>
+                    <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white border border-xmas-gold/50 px-4 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 text-xs font-semibold pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-xmas-gold text-base"></i>
+        <span id="toastMessage">訊息通知</span>
+    </div>
+
+    <!-- Application Core Script -->
+    <script>
+        // Preset Options
+        const GROUPS = ['崴丞小組', '子恩小組', '厚翎小組'];
+        const TIME_SLOTS = ['12/1', '12/8（兒童聖誕）', '12/5（新莊兒童聖誕）', '12/12'];
+        const VENUES = ['交誼廳', '親子室', '圖書室'];
+
+        // App Data Structure
+        // registrations: Array of { id, group, timeSlot, venue, timestamp }
+        class XmasLotteryStore {
+            constructor() {
+                this.registrations = JSON.parse(localStorage.getItem('xmas_registrations')) || [];
+            }
+
+            save() {
+                localStorage.setItem('xmas_registrations', JSON.stringify(this.registrations));
+            }
+
+            // Check if group already drew for timeSlot
+            hasGroupRegisteredTime(group, timeSlot) {
+                return this.registrations.some(r => r.group === group && r.timeSlot === timeSlot);
+            }
+
+            // Get taken venues for specific time slot
+            getTakenVenues(timeSlot) {
+                return this.registrations
+                    .filter(r => r.timeSlot === timeSlot)
+                    .map(r => r.venue);
+            }
+
+            // Add new drawing result
+            addRegistration(group, timeSlot, venue) {
+                // Remove any old registration if exists for same group & time slot
+                this.registrations = this.registrations.filter(r => !(r.group === group && r.timeSlot === timeSlot));
+
+                const record = {
+                    id: Date.now().toString(),
+                    group,
+                    timeSlot,
+                    venue,
+                    timestamp: new Date().toLocaleString('zh-TW', { hour12: false })
+                };
+                this.registrations.push(record);
+                this.save();
+                return record;
+            }
+
+            deleteRegistration(id) {
+                this.registrations = this.registrations.filter(r => r.id !== id);
+                this.save();
+            }
+
+            clearAll() {
+                this.registrations = [];
+                this.save();
+            }
+        }
+
+        const store = new XmasLotteryStore();
+
+        // Current Interactive Form State
+        let currentGroup = '';
+        let currentTimeSlot = '';
+
+        // Toast Helper
+        function showToast(msg, icon = 'fa-circle-check') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            document.getElementById('toastIcon').className = `fa-solid ${icon} text-xmas-gold text-base`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 2800);
+        }
+
+        // Navigation Steps Controller
+        function goToStep(step) {
+            const card1 = document.getElementById('step1Card');
+            const card2 = document.getElementById('step2Card');
+            const card3 = document.getElementById('step3Card');
+
+            const ind1 = document.getElementById('step1Indicator');
+            const ind2 = document.getElementById('step2Indicator');
+            const ind3 = document.getElementById('step3Indicator');
+
+            [card1, card2, card3].forEach(c => c.classList.add('hidden'));
+
+            [ind1, ind2, ind3].forEach(i => {
+                i.className = "p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 font-medium flex items-center justify-center space-x-1";
+            });
+
+            if (step === 1) {
+                card1.classList.remove('hidden');
+                ind1.className = "p-2 rounded-xl bg-xmas-red/20 border border-xmas-red text-xmas-gold font-bold flex items-center justify-center space-x-1";
+            } else if (step === 2) {
+                card2.classList.remove('hidden');
+                ind2.className = "p-2 rounded-xl bg-xmas-red/20 border border-xmas-red text-xmas-gold font-bold flex items-center justify-center space-x-1";
+                document.getElementById('selectedGroupDisplay').textContent = currentGroup;
+            } else if (step === 3) {
+                card3.classList.remove('hidden');
+                ind3.className = "p-2 rounded-xl bg-xmas-gold/20 border border-xmas-gold text-xmas-gold font-bold flex items-center justify-center space-x-1";
+                document.getElementById('summaryGroup').textContent = currentGroup;
+                document.getElementById('summaryTime').textContent = currentTimeSlot;
+                updateVenueAvailabilityStatus();
+            }
+        }
+
+        function selectGroup(groupName) {
+            currentGroup = groupName;
+            showToast(`已選擇：${groupName}`);
+            goToStep(2);
+        }
+
+        function selectTimeSlot(timeSlotName) {
+            currentTimeSlot = timeSlotName;
+
+            // Check if group already drew for this timeslot
+            if (store.hasGroupRegisteredTime(currentGroup, currentTimeSlot)) {
+                const existing = store.registrations.find(r => r.group === currentGroup && r.timeSlot === currentTimeSlot);
+                if (!confirm(`${currentGroup} 在 ${currentTimeSlot} 已登記過「${existing.venue}」！是否要重新抽籤替換？`)) {
+                    return;
+                }
+            }
+
+            showToast(`已選擇時段：${timeSlotName}`);
+            goToStep(3);
+        }
+
+        function resetFlow() {
+            currentGroup = '';
+            currentTimeSlot = '';
+            document.getElementById('slotVenueName').textContent = '準備抽籤';
+            document.getElementById('slotDesc').textContent = '按下下方按鈕，系統將自動隨機抽出空閒場地！';
+            goToStep(1);
+        }
+
+        // Update step 3 available venues display
+        function updateVenueAvailabilityStatus() {
+            const takenVenues = store.getTakenVenues(currentTimeSlot);
+            const container = document.getElementById('venueSelectionGrid');
+            container.innerHTML = '';
+
+            VENUES.forEach(v => {
+                const isTaken = takenVenues.includes(v);
+                const record = store.registrations.find(r => r.timeSlot === currentTimeSlot && r.venue === v);
+                const taker = isTaken ? record?.group : null;
+                const isCurrentGroupChoice = taker === currentGroup;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                
+                if (isTaken) {
+                    if (isCurrentGroupChoice) {
+                        btn.className = "p-4 rounded-2xl border bg-emerald-950/60 border-emerald-600 text-left space-y-2 transition shadow-md";
+                        btn.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-base text-emerald-300">${v}</span>
+                                <span class="text-[10px] bg-emerald-600/30 text-emerald-300 px-2 py-0.5 rounded-full">你已登記</span>
+                            </div>
+                            <div class="text-xs text-emerald-400 font-semibold">已由【${taker}】選走</div>
+                        `;
+                    } else {
+                        btn.className = "p-4 rounded-2xl border bg-red-950/40 border-red-900/50 text-left space-y-2 opacity-75 cursor-not-allowed";
+                        btn.disabled = true;
+                        btn.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-base text-red-300">${v}</span>
+                                <span class="text-[10px] bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">已被佔用</span>
+                            </div>
+                            <div class="text-xs text-red-400 font-semibold">已被【${taker}】選走</div>
+                        `;
+                    }
+                } else {
+                    btn.className = "p-4 rounded-2xl border bg-slate-800/80 hover:bg-xmas-green/30 border-slate-700 hover:border-emerald-500 text-left space-y-2 transition transform active:scale-95 shadow-md group";
+                    btn.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-base text-white group-hover:text-emerald-300">${v}</span>
+                            <span class="text-[10px] bg-slate-700 group-hover:bg-emerald-600 text-slate-300 group-hover:text-white px-2 py-0.5 rounded-full transition">可選登記</span>
+                        </div>
+                        <div class="text-xs text-slate-400">點擊直接選定此場地</div>
+                    `;
+                    btn.onclick = () => selectVenueDirectly(v);
+                }
+                container.appendChild(btn);
+            });
+        }
+
+        // Direct Venue Selection & Save
+        function selectVenueDirectly(venueName) {
+            // Save Record
+            store.addRegistration(currentGroup, currentTimeSlot, venueName);
+            
+            // Trigger Confetti Celebration
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#D42426', '#165B33', '#F8B229', '#ffffff']
+            });
+
+            showToast(`登記成功：${currentGroup} 已選定 ${venueName}`);
+            
+            // Refresh status & render table
+            updateVenueAvailabilityStatus();
+            renderSummaryTable();
+
+            // After 0.8 seconds, automatically ask or prompt to return home for the next group
+            setTimeout(() => {
+                if (confirm(`【${currentGroup}】成功登記 ${currentTimeSlot} 的「${venueName}」！\n\n點擊「確定」將回到首頁，交由下一位／下一組繼續選場地！`)) {
+                    resetFlow();
+                    document.getElementById('tabDrawNav').click();
+                } else {
+                    document.getElementById('tabSummaryNav').click();
+                }
+            }, 500);
+        }
+
+        // Render Summary Table
+        function renderSummaryTable() {
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = '';
+
+            if (store.registrations.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-slate-500">
+                            尚未有任何小組進行場地抽籤登記
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Sort by timeSlot order
+            const sorted = [...store.registrations].sort((a, b) => TIME_SLOTS.indexOf(a.timeSlot) - TIME_SLOTS.indexOf(b.timeSlot));
+
+            sorted.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-white">${r.timeSlot}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded-md bg-xmas-gold/20 text-xmas-gold border border-xmas-gold/40 font-bold">${r.venue}</span>
+                    </td>
+                    <td class="p-3 font-bold text-emerald-400">${r.group}</td>
+                    <td class="p-3 text-[11px] text-slate-400">${r.timestamp}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteRecord('${r.id}')" class="text-slate-500 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteRecord(id) {
+            if (confirm('確定要取消該場地登記紀錄嗎？')) {
+                store.deleteRegistration(id);
+                renderSummaryTable();
+                updateVenueAvailabilityStatus();
+                showToast('已取消登記紀錄', 'fa-trash-can');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('確定要清空所有的場地抽籤登記紀錄嗎？此動作無法復原！')) {
+                store.clearAll();
+                renderSummaryTable();
+                updateVenueAvailabilityStatus();
+                showToast('已清空所有資料');
+            }
+        }
+
+        // Generate LINE Share text
+        function copyLineSummary() {
+            if (store.registrations.length === 0) {
+                showToast('尚無登記紀錄可複製！', 'fa-triangle-exclamation');
+                return;
+            }
+
+            let msg = `🎄【學生牧區聖誕福音活動場地登記總表】🎄\n-------------------------------\n`;
+
+            TIME_SLOTS.forEach(slot => {
+                msg += `📅 時段：${slot}\n`;
+                const records = store.registrations.filter(r => r.timeSlot === slot);
+                if (records.length === 0) {
+                    msg += `   └ (尚未有小組登記)\n`;
+                } else {
+                    records.forEach(r => {
+                        msg += `   📍 ${r.venue} ➔ 已被【${r.group}】選走\n`;
+                    });
+                }
+                msg += `\n`;
+            });
+
+            msg += `-------------------------------\n✨ 願神的平安與喜樂同在！祝聖誕福音活動大有果效！✝️`;
+
+            navigator.clipboard.writeText(msg).then(() => {
+                showToast('已複製 LINE 通報文字至剪貼簿！');
+            }).catch(() => {
+                showToast('複製失敗，請手動複製', 'fa-triangle-exclamation');
+            });
+        }
+
+        // Sync Modal Handlers
+        const syncModal = document.getElementById('syncModal');
+        document.getElementById('openSyncModalBtn').addEventListener('click', () => syncModal.classList.remove('hidden'));
+        function closeSyncModal() { syncModal.classList.add('hidden'); }
+
+        function exportDataJSON() {
+            const dataStr = JSON.stringify(store.registrations, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `xmas-venue-lottery-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('已成功匯出 JSON 備份檔！');
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed)) {
+                        store.registrations = parsed;
+                        store.save();
+                        renderSummaryTable();
+                        closeSyncModal();
+                        showToast('已成功匯入備份資料！');
+                    }
+                } catch (err) {
+                    alert('匯入失敗，請確認檔案格式是否正確！');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Tab Navigation Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabDrawNav = document.getElementById('tabDrawNav');
+            const tabSummaryNav = document.getElementById('tabSummaryNav');
+            const drawSection = document.getElementById('drawSection');
+            const summarySection = document.getElementById('summarySection');
+
+            tabDrawNav.addEventListener('click', () => {
+                tabDrawNav.className = "flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 bg-gradient-to-r from-xmas-red to-red-700 text-white shadow-md";
+                tabSummaryNav.className = "flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white";
+                drawSection.classList.remove('hidden');
+                summarySection.classList.add('hidden');
+            });
+
+            tabSummaryNav.addEventListener('click', () => {
+                tabSummaryNav.className = "flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 bg-gradient-to-r from-xmas-red to-red-700 text-white shadow-md";
+                tabDrawNav.className = "flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 text-slate-400 hover:text-white";
+                summarySection.classList.remove('hidden');
+                drawSection.classList.add('hidden');
+                renderSummaryTable();
+            });
+
+            renderSummaryTable();
+        });
+    </script>
+</body>
+</html>
